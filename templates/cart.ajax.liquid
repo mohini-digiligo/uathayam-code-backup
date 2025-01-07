@@ -1,0 +1,125 @@
+{% comment %}
+  JS-load cart markup without bloat of a full layout.
+
+  This is used in both the cart drawer and cart page.
+  When a quantity is changed, this file is scraped and data-products
+    is fully replaced to account for possible cart discounts changing
+
+  The cart-wide discount div also replaces what is originally in the cart
+    as it can change anytime a cart-item changes
+{% endcomment %}
+{% layout none %}
+
+  {% liquid
+    assign gift_wraps_in_cart = 0
+%}
+<div class="cart__items"
+  data-count="{{ cart.item_count }}"
+  data-cart-subtotal="{{ cart.total_price }}"
+  data-cart-savings="{{ cart.total_discount }}">
+  {% for item in cart.items %}
+    {% assign giftWrapProduct = false %}
+    {% if settings.enable_gift_wrap and settings.gift_wrap_product != blank %}
+      {% if item.product.id == settings.gift_wrap_product.id %}
+          {% assign gift_wraps_in_cart = gift_wraps_in_cart | plus: 1 %}
+          {% assign giftWrapProduct = true %}
+        {% endif %}
+      {% endif %}
+    {%- render 'cart-item', product: item, sizes: '100px',giftWrapProduct:giftWrapProduct -%}
+  {% endfor %}
+</div>
+ {% assign totalItems = 0 %}
+          {%- capture recommendationsContent -%}
+            {% for cartItem in cart.items %}
+             {% for refProduct in cartItem.product.metafields.shopify--discovery--product_recommendation.complementary_products.value %}
+               {% assign line_items = cart | line_items_for: refProduct | sum: 'quantity' %}
+               {% if line_items == 0 %}
+                <div class="product-recommendations__slide">
+                  {%- render 'product-grid-item',
+                    image_style: 'default',
+                    product: refProduct,
+                    per_row: 1,
+                    type: 'horizontal',
+                    sizes: '112px',
+                    complementaryProduct: true
+                  -%}
+                </div>
+                 {% assign totalItems = totalItems | plus: 1 %}
+               {% endif %}
+            {%- endfor -%}
+               {% if totalItems > 0 %}
+                 {% break %}
+                 {% endif %}
+            {%- endfor -%}
+          {%- endcapture -%}
+            <div class="cart-recommendations-wrapper" data-cart-recommendations>
+          {% if recommendationsContent != blank %}
+              <cart-recommendations>
+                <div
+                  class="product-single__related grid grid--uniform"
+                  data-aos="overflow__animation"
+                    data-slideshow data-controls="arrows"
+                    data-per-slide="1" data-count="{{ totalItems }}"
+                >
+                 {{ recommendationsContent }}
+                </div>
+              </cart-recommendations>
+          {% endif %}
+            </div>
+          {% if settings.enable_gift_wrap and settings.gift_wrap_product != blank %}
+          <div class="cart-gift-wrapping-wrapper" data-gift-wrap>
+            <cart-gift-wrapping
+              class="m-gift-wrapping"
+              data-gift-wrap-id="{{ settings.gift_wrap_product.selected_or_first_available_variant.id }}"
+              data-gift-wraps-in-cart="{{ gift_wraps_in_cart }}"
+              data-cart-items-size="{{ cart.items.size }}"
+            >
+              <input
+                id="m-gift-wrapping"
+                type="checkbox"
+                name="attributes[gift-wrapping]"
+                value="yes"
+                {% if gift_wraps_in_cart > 0 %}
+                  checked="checked"
+                {% endif %}
+                class="m:visually-hidden"
+              >
+              <label for="m-gift-wrapping" class="m-gift-wrapping--label">
+                <span class="m-gift-wrapping--text">
+                  {% if settings.gift_wrap_text != blank %}
+                    {{ settings.gift_wrap_text }}
+                  {% else %}
+                    I want this order to be gift wrapped
+                  {% endif %}
+                </span>
+                <div class="m-gift-wrapping--loading">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                </div>
+                <svg
+                  class="m-gift-wrapping--icon"
+                  viewBox="0 0 14 14"
+                  with="16"
+                  height="16"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <rect x="0.5" y="0.5" width="13" height="13" stroke="currentColor"/>
+                  <path d="M3.5625 7.625L5.75 9.8125L10.75 4.8125" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </label>
+            </cart-gift-wrapping>
+          </div>
+                    {% endif %}
+<div class="cart__discounts cart__item-sub cart__item-row{% if cart.cart_level_discount_applications == blank %} hide{% endif %}">
+  <div>{{ 'cart.general.discounts' | t }}</div>
+  <div>
+    {% for cart_discount in cart.cart_level_discount_applications %}
+      <div class="cart__discount">
+        {{ cart_discount.title }} (-{{ cart_discount.total_allocated_amount | money }})
+      </div>
+    {% endfor %}
+  </div>
+</div>

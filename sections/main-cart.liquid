@@ -1,0 +1,236 @@
+<div class="page-width page-content">
+
+  {%- render 'breadcrumbs' -%}
+  {% liquid
+    assign gift_wraps_in_cart = 0
+%}
+  <header class="section-header text-center{% if cart.item_count == 0 %} section-header--404{% endif %}">
+    <h1 class="section-header__title">{{ 'cart.general.title' | t }}</h1>
+    <div class="rte text-spacing">
+      {%- if cart.item_count == 0 -%}
+        <p>{{ 'cart.general.empty' | t }}</p>
+      {%- endif -%}
+      <p>{{ 'cart.general.continue_browsing_html' | t: url: routes.all_products_collection_url }}</p>
+    </div>
+  </header>
+
+  {%- if cart.item_count > 0 -%}
+    <form action="{{ routes.cart_url }}" method="post" novalidate data-location="page" id="CartPageForm">
+      <div class="cart__page">
+        <div data-products class="cart__page-col">
+          {% for item in cart.items %}
+            {% assign giftWrapProduct = false %}
+            {% if settings.enable_gift_wrap and settings.gift_wrap_product != blank %}
+              {% if item.product.id == settings.gift_wrap_product.id %}
+                  {% assign gift_wraps_in_cart = gift_wraps_in_cart | plus: 1 %}
+                  {% assign giftWrapProduct = true %}
+                {% endif %}
+              {% endif %}
+            {%- render 'cart-item', product: item, sizes: '150px',mainCart:true,giftWrapProduct:giftWrapProduct -%}
+          {%- endfor -%}
+
+        </div>
+        
+        <div class="cart__page-col">
+          {% if settings.cart_notes_enable %}
+            <div>
+              <label for="CartNote">{{ 'cart.general.note' | t }}</label>
+              <textarea name="note" class="input-full cart-notes" id="CartNote">{{ cart.note }}</textarea>
+            </div>
+          {% endif %}
+
+          {% if settings.enable_gift_wrap and settings.gift_wrap_product != blank %}
+          <div class="cart-gift-wrapping-wrapper cart-page" data-gift-wrap>
+            <cart-gift-wrapping
+              class="m-gift-wrapping"
+              data-gift-wrap-id="{{ settings.gift_wrap_product.selected_or_first_available_variant.id }}"
+              data-cart-items-size="{{ cart.items.size }}"
+              data-gift-wraps-in-cart="{{ gift_wraps_in_cart }}"
+            >
+              <input
+                id="m-gift-wrapping"
+                type="checkbox"
+                name="attributes[gift-wrapping]"
+                value="yes"
+                {% if gift_wraps_in_cart > 0 %}
+                  checked="checked"
+                {% endif %}
+                class="m:visually-hidden"
+              >
+              <label for="m-gift-wrapping" class="m-gift-wrapping--label">
+                <span class="m-gift-wrapping--text">
+                  {% if settings.gift_wrap_text != blank %}
+                    {{ settings.gift_wrap_text }}
+                  {% else %}
+                    I want this order to be gift wrapped
+                  {% endif %}
+                </span>
+                <div class="m-gift-wrapping--loading">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                </div>
+                <svg
+                  class="m-gift-wrapping--icon"
+                  viewBox="0 0 14 14"
+                  with="16"
+                  height="16"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <rect x="0.5" y="0.5" width="13" height="13" stroke="currentColor"/>
+                  <path d="M3.5625 7.625L5.75 9.8125L10.75 4.8125" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </label>
+            </cart-gift-wrapping>
+          </div>
+                    {% endif %}
+                    {% if settings.cart_coupon_input %}
+                    <div class="coupon-wrapper"><label>Coupon code</label><input type="text" name="discount" value=""></div>
+                      {% endif %}
+          <div data-discounts>
+            {% if cart.cart_level_discount_applications != blank %}
+              <div class="cart__discounts cart__item-sub cart__item-row">
+                <div>{{ 'cart.general.discounts' | t }}</div>
+                <div class="text-right">
+                  {% for cart_discount in cart.cart_level_discount_applications %}
+                    <div class="cart__discount">
+                      {{ cart_discount.title }} (-{{ cart_discount.total_allocated_amount | money }})
+                    </div>
+                  {% endfor %}
+                </div>
+              </div>
+            {% endif %}
+          </div>
+          
+          <div class="cart__item-sub cart__item-row" data-saving-wrapper>
+            <div class="ajaxcart__subtotal">Saving</div>
+            <div data-savings>{{ cart.original_total_price | minus: cart.total_price | money }}</div>
+          </div>
+          
+          <div class="cart__item-sub cart__item-row">
+            <div>{{ 'cart.general.subtotal' | t }}</div>
+            <div data-subtotal>{{ cart.total_price | money }}</div>
+          </div>
+
+          {% if settings.cart_terms_conditions_enable %}
+            <div class="cart__item-row cart__terms">
+              <input type="checkbox" id="CartTerms" class="cart__terms-checkbox">
+              <label for="CartTerms">
+                {% if settings.cart_terms_conditions_page != blank %}
+                  {{ 'cart.general.terms_html' | t: url: settings.cart_terms_conditions_page.url }}
+                {% else %}
+                  {{ 'cart.general.terms' | t }}
+                {% endif %}
+              </label>
+            </div>
+          {% endif %}
+
+          <div class="cart__item-row cart__checkout-wrapper">
+            <button type="submit" name="checkout" data-terms-required="{{ settings.cart_terms_conditions_enable }}" class="btn cart__checkout">
+              {{ 'cart.general.checkout' | t }}
+            </button>
+
+            {% if additional_checkout_buttons and settings.cart_additional_buttons %}
+              <div class="additional-checkout-buttons">{{ content_for_additional_checkout_buttons }}</div>
+            {% endif %}
+          </div>
+
+          <div class="cart__item-row text-center">
+            <small>
+              {{ 'cart.general.shipping_at_checkout' | t }}<br />
+            </small>
+          </div>
+        </div>
+      </div>
+
+<!--cart reccomendation-->
+  
+
+{% for item in cart.items %}
+  {% assign rec_product = item.product  %}
+  {% break %}
+{%- endfor -%}
+
+
+          {%- liquid
+  assign recommend_products = true
+
+  if recommendations.products and recommendations.products_count > 0
+    assign related_collection = recommendations
+  endif
+
+  assign number_of_products = 5
+-%}
+
+<product-recommendations
+  id="Recommendations-cart-{{ section.id }}"
+  data-section-id="{{ section.id }}"
+  data-section-type="product-recommendations"
+  data-enable="{{ recommend_products }}"
+  data-product-id="{{ rec_product.id }}"
+  data-intent="related"
+  data-url="{{ routes.product_recommendations_url }}?section_id=template--14693086625855__product-recommendations&product_id={{ rec_product.id }}&limit=5"
+  data-limit="5">
+
+  <div
+    data-section-id="{{ rec_product.id }}"
+    data-subsection
+    data-section-type="collection-grid"
+    class="index-section">
+    <div class="page-width">
+      <header class="section-header">
+        <h3 class="section-header__title">
+          You May Also Like
+        </h3>
+      </header>
+    </div>
+
+    <div class="page-width page-width--flush-small">
+      <div class="grid-overflow-wrapper">
+        {%- if recommend_products -%}
+          <div class="product-recommendations-placeholder">
+            {% comment %}
+              This content is visually hidden and replaced when recommended products show up
+            {% endcomment %}
+            <div class="grid grid--uniform visually-invisible" aria-hidden="true">
+              {%- render 'product-grid-item',
+                product: rec_product,
+                quick_shop_enable: false
+              -%}
+            </div>
+          </div>
+        {%- endif -%}
+        {%- if related_collection.products_count > 0 -%}
+          <div class="product-recommendations page-width">
+            <div class="grid grid--uniform" data-aos="overflow__animation">
+              {%- for product in related_collection.products limit: number_of_products -%}
+                {% comment %} On smaller screen sizes, 39vw is used for grid items in the CSS {% endcomment %}
+                {%- render 'product-grid-item',
+                  product: rec_product,
+                  per_row: 5,
+                  quick_shop_enable: false,
+                  fallback: '39vw',
+                -%}
+              {%- endfor -%}
+            </div>
+          </div>
+        {%- endif -%}
+      </div>
+    </div>
+  </div>
+</product-recommendations>
+
+<!--cart reccomendation-->
+
+
+    </form>
+  {%- endif -%}
+</div>
+
+{% schema %}
+{
+  "name": "t:sections.main-cart.name"
+}
+{% endschema %}

@@ -261,6 +261,10 @@
         {%- if settings.vendor_enable -%}
           <div class="grid-product__vendor">{{ product.vendor }}</div>
         {%- endif -%}
+
+        <span class="product_sale_count" data-product-id="{{ product.id }}"></span>
+
+        
         <div class="grid-product__price">
           {%- if on_sale -%}
             <span class="visually-hidden">{{ 'products.general.regular_price' | t }}</span>

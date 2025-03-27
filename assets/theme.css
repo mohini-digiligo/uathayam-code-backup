@@ -13685,3 +13685,18 @@ form.filter-form .tag--swatch .tag__checkbox-wrapper .color-swatch {
 		transform: rotate(360deg)
 	}
 }
+
+.soldout-warning{
+      position: absolute;
+    font-size: 11px;
+    width: 100%;
+    text-align: center;
+    color: red;
+    left: 50%;
+    bottom: 0px;
+    transform: translateX(-50%);
+    display: none;
+}
+.variant-input .variant__button-label.disabled ~ .soldout-warning{
+  display:block;
+}
